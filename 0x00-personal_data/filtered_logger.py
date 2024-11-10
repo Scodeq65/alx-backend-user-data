@@ -33,7 +33,7 @@ def filter_datum(
 
 
 class RedactingFormatter(logging.Formatter):
-    """ Redacting Formatter class"""
+    """Redacting Formatter class"""
 
     REDACTION = "***"
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
@@ -87,10 +87,54 @@ def get_db() -> MySQLConnection:
     host = os.getenv('PERSONAL_DATA_DB_HOST', 'localhost')
     db_name = os.getenv('PERSONAL_DATA_DB_NAME')
 
-    connection = mysql.connector.connect(
-        user=username,
-        password=password,
-        host=host,
-        database=db_name
-    )
-    return connection
+    if not db_name:
+        raise ValueError(
+            "Database name not provided in environment variables."
+        )
+
+    try:
+        connection = mysql.connector.connect(
+            user=username,
+            password=password,
+            host=host,
+            database=db_name
+        )
+        return connection
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        raise  # Reraise the error after logging it
+
+
+def main():
+    """
+    Main function to retrieve all users from the database
+    and display their information with sensitive
+    fields redacted.
+    """
+    logger = get_logger()
+    db = get_db()
+
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+
+    for user in users:
+        # Constructing log message for each user with redacted data
+        log_message = (
+            f"name={user['name']}; "
+            f"email={user['email']}; "
+            f"phone={user['phone']}; "
+            f"ssn={user['ssn']}; "
+            f"password={user['password']}; "
+            f"ip={user['ip']}; "
+            f"last_login={user['last_login']}; "
+            f"user_agent={user['user_agent']}"
+        )
+        logger.info(log_message)
+
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
