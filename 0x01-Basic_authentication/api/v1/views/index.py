@@ -2,7 +2,7 @@
 """ Module of Index views
 """
 from flask import jsonify, abort
-from api.v1.app import app, app_views
+from api.v1.app import app_views
 
 
 @app_views.route('/status', methods=['GET'], strict_slashes=False)
@@ -25,6 +25,6 @@ def stats() -> str:
     stats['users'] = User.count()
     return jsonify(stats)
 
-@app.route('/api/v1/unauthorized')
+@app_views.route('/unauthorized')
 def unauthorized():
     abort(401)
