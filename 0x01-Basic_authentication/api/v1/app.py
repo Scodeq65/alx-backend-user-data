@@ -8,6 +8,7 @@ from flask import Flask, jsonify, abort, request
 from flask_cors import (CORS, cross_origin)
 import os
 from api.v1.auth.auth import Auth
+from api.v1.auth.basic_auth import BasicAuth
 
 
 app = Flask(__name__)
@@ -18,7 +19,10 @@ CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 auth = None
 auth_type = getenv("AUTH_TYPE")
 
-if auth_type == "auth":
+# Initialize auth based on AUTH_TYPE
+if auth_type == "basic_auth":
+    auth = BasicAuth()
+else:
     auth = Auth()
 
 
@@ -51,7 +55,11 @@ def before_request_handler():
         return
 
     """list of routes that doesnt require authentication"""
-    excluded_paths = ['/api/v1/status/', '/api/v1/unauthorized/', '/api/v1/forbidden/']
+    excluded_paths = [
+        '/api/v1/status/',
+        '/api/v1/unauthorized/',
+        '/api/v1/forbidden/'
+    ]
 
     """check if the current request path requires
     authentication
