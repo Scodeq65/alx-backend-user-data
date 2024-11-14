@@ -28,9 +28,19 @@ class Auth:
         normalized_path = path if path.endswith('/') else path + '/'
 
         for excluded_path in excluded_paths:
-            if excluded_path.endswith('/'):
+            """ Handles the wildcard paths that ends with '*'
+            """
+            if excluded_path.endswith('*'):
+                base_path = excluded_path[:-1]
+                if normalized_path.startswith(base_path):
+                    return False
+
+            # Extract match check for paths ending with '/'
+            elif excluded_path.endswith('/'):
                 if normalized_path == excluded_path:
                     return False
+
+            # Extract match check for paths not ending with '/'
             elif normalized_path == excluded_path + '/':
                 return False
 
