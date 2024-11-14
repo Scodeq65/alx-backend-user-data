@@ -71,7 +71,7 @@ class BasicAuth(Auth):
 
         if len(credentials) != 2:
             return None, None
-        
+
         user_email, user_password = credentials
         return user_email, user_password
 
