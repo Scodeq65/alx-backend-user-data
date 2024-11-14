@@ -65,9 +65,14 @@ class BasicAuth(Auth):
             return None, None
 
         # Split at the first occurrence of ':' to separate email and password
-        user_email, user_password = decoded_base64_authorization_header.split(
+        credentials = decoded_base64_authorization_header.split(
             ':', 1
         )
+
+        if len(credentials) != 2:
+            return None, None
+        
+        user_email, user_password = credentials
         return user_email, user_password
 
     def user_object_from_credentials(
