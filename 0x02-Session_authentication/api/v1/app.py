@@ -76,7 +76,7 @@ def before_request_handler():
     """if authorization header is missing, return a 401 error
     """
     if (auth.authorization_header(request) is None and
-    auth.session_cookie(request) is None):
+            auth.session_cookie(request) is None):
         abort(401)
 
     """If current usr is not available, return a 403 err"""
