@@ -18,7 +18,7 @@ CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 
 
 auth = None
-auth_type = getenv("AUTH_TYPE")
+auth_type = getenv("AUTH_TYPE", "auth")
 
 # Initialize auth based on AUTH_TYPE
 if auth_type == "basic_auth":
@@ -44,7 +44,7 @@ def unauthorized(error) -> str:
 
 
 @app.errorhandler(403)
-def unauthorized(error) -> str:
+def forbidden(error) -> str:
     """ Forbidden handler
     """
     return jsonify({"error": "Forbidden"}), 403
@@ -63,7 +63,8 @@ def before_request_handler():
     excluded_paths = [
         '/api/v1/status/',
         '/api/v1/unauthorized/',
-        '/api/v1/forbidden/'
+        '/api/v1/forbidden/',
+        '/api/v1/auth_session/login/'
     ]
 
     """check if the current request path requires
@@ -74,7 +75,8 @@ def before_request_handler():
 
     """if authorization header is missing, return a 401 error
     """
-    if auth.authorization_header(request) is None:
+    if (auth.authorization_header(request) is None and
+    auth.session_cookie(request) is None):
         abort(401)
 
     """If current usr is not available, return a 403 err"""
