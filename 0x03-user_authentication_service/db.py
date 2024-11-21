@@ -3,12 +3,8 @@
 DB module
 """
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
-
+from sqlalchemy.exc import InvalidRequestError, NoResultFound
+from sqlalchemy.orm import sessionmaker, scoped_session
 from user import Base, User
 
 
@@ -20,15 +16,7 @@ class DB:
         self._engine = create_engine("sqlite:///a.db", echo=False)
         Base.metadata.drop_all(self._engine)
         Base.metadata.create_all(self._engine)
-        self.__session = None
-
-    @property
-    def _session(self) -> Session:
-        """Memoized session object"""
-        if self.__session is None:
-            DBSession = sessionmaker(bind=self._engine)
-            self.__session = DBSession()
-        return self.__session
+        self.__session = scoped_session(sessionmaker(bind=self._engine))
 
     def add_user(self, email: str, hashed_password: str) -> User:
         """
@@ -42,8 +30,9 @@ class DB:
             User: The created User object.
         """
         new_user = User(email=email, hashed_password=hashed_password)
-        self._session.add(new_user)  # Add the new user to the session
-        self._session.commit()  # Commit the session to save changes
+        session = self.__session()
+        session.add(new_user)
+        session.commit()
         return new_user
 
     def find_user_by(self, **kwargs) -> User:
@@ -60,14 +49,13 @@ class DB:
             InvalidRequestError: If the query contains invalid arguments.
             NoResultFound: If no user is found for the given filter.
         """
+        session = self.__session()
         try:
-            # Query the User model with the provided filter
-            user = self._session.query(User).filter_by(**kwargs).one()
+            return session.query(User).filter_by(**kwargs).one()
         except NoResultFound:
-            raise NoResultFound("No user found for the given criteria")
+            raise NoResultFound(f"No user found with criteria: {kwargs}")
         except InvalidRequestError:
-            raise InvalidRequestError("Invalid query arguments")
-        return user
+            raise InvalidRequestError(f"Invalid query arguments: {kwargs}")
 
     def update_user(self, user_id: int, **kwargs) -> None:
         """
@@ -82,18 +70,20 @@ class DB:
 
         Raises:
             ValueError: If an argument does not correspond to a
-            valid user attribute.
+                        valid user attribute.
         """
-        # Locate the user
+        session = self.__session()
         user = self.find_user_by(id=user_id)
 
-        # Update the user's attributes
+        # Get all valid attributes from the User model
+        valid_attributes = User.__table__.columns.keys()
+
         for key, value in kwargs.items():
-            if not hasattr(user, key):
+            if key not in valid_attributes:
                 raise ValueError(
-                    f"Attribute {key} does not exist on the User model"
+                    f"Invalid attribute '{key}'. "
+                    f"Valid attributes: {valid_attributes}"
                 )
             setattr(user, key, value)
 
-        # Commit the changes
-        self._session.commit()
+        session.commit()
