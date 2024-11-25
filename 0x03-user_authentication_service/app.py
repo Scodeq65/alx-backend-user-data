@@ -17,6 +17,7 @@ def welcome():
     """
     return jsonify({"message": "Bienvenue"})
 
+
 @app.route("/users", methods=["POST"])
 def users():
     """
@@ -30,7 +31,7 @@ def users():
         JSON response:
             - {"email": "<registered email>", "message": "user created"}
               if user is successfully registered.
-            - {"message": "email already registered"} if the user already exists.
+            - {"message": "email already registered"} if user already exists.
     """
     # Get form data
     email = request.form.get("email")
